@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
   try {
     const { mode, payload } = req.body;
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     if (mode === 'recommend') {
       const prompt = `
@@ -63,13 +63,12 @@ export default async function handler(req, res) {
       try { parsed = JSON.parse(text); } catch (e) {}
 
       const imageUrl = await generateMuscleImage(parsed.targetMusclesEn);
-      return res.status(200).json({ text: parsed.resultText, imageUrl, targetMusclesEn: parsed.targetMusclesEn });
-
+      return res.status(200).json({ text: parsed.resultText, imageUrl });
     }
 
     return res.status(400).json({ error: 'Invalid mode' });
   } catch (error) {
-    console.error("API Handler Error:", error);
-    return res.status(500).json({ error: error.message || 'Internal Server Error' });
+    console.error('Gemini API 오류:', error);
+    return res.status(500).json({ error: 'AI 응답을 생성하는 중 오류가 발생했습니다.' });
   }
 }
