@@ -47,10 +47,11 @@ export default async function handler(req, res) {
         - 선택한 운동 부위: ${payload.targetCategory}
         - 선택한 난이도: ${payload.difficulty}
 
-        위 정보를 바탕으로 불필요한 인사말이나 서론 없이 아래 JSON 포맷으로만 답변하세요.
+        위 정보를 바탕으로 깔끔하게 정리된 운동 루틴(세트, 횟수, 팁 포함)을 작성해주세요.
+        불필요한 인사말이나 서론 없이 아래 JSON 포맷으로만 답변하세요.
 
         {
-          "resultText": "맞춤 운동 추천 내용...",
+          "resultText": "1. [운동 이름]\n- 세트/횟수: ...\n- 설명: ...",
           "targetMusclesEn": "Chest, Triceps"
         }
       `;

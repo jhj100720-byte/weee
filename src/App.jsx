@@ -11,11 +11,24 @@ export default function App() {
   const [result, setResult] = useState('');
   const [muscleImageUrl, setMuscleImageUrl] = useState('');
 
-  // 운동 도사전 상태 관리
+  // 운동 목록 (구 운동 도사전) 상태 관리
   const [selectedDictCategory, setSelectedDictCategory] = useState('가슴');
   const [selectedExercise, setSelectedExercise] = useState(null);
 
-  // 운동 목록 및 상세 자세 데이터베이스
+  // 요일별 루틴 저장 상태 관리
+  const [routines, setRoutines] = useState({
+    '월요일': [],
+    '화요일': [],
+    '수요일': [],
+    '목요일': [],
+    '금요일': [],
+    '토요일': [],
+    '일요일': []
+  });
+  const [targetDay, setTargetDay] = useState('월요일');
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
+
+  // 운동 목록 데이터베이스
   const exerciseDictionary = {
     '가슴': [
       {
@@ -91,7 +104,7 @@ export default function App() {
     '하체': [
       {
         name: '바벨 스쿼트 (Barbell Squat)',
-        target: '대퇴사두근, 둔근, 코er',
+        target: '대퇴사두근, 둔근, 코어',
         difficulty: '중급',
         description: '하체 운동의 왕이라 불리며 전신 근육 발달과 코어 강화에 필수적인 운동입니다.',
         steps: [
@@ -121,6 +134,7 @@ export default function App() {
     setLoading(true);
     setResult('');
     setMuscleImageUrl('');
+    setSaveSuccessMessage('');
 
     try {
       const response = await fetch('/api/generate', {
@@ -150,6 +164,32 @@ export default function App() {
     }
   };
 
+  // 추천받은 운동을 특정 요일 루틴에 저장하는 함수
+  const handleSaveToRoutine = () => {
+    if (!result) return;
+    const newRoutineItem = {
+      title: `[${selectedMuscle} / ${selectedDifficulty}] 맞춤 추천 루틴`,
+      content: result,
+      timestamp: new Date().toLocaleTimeString()
+    };
+
+    setRoutines(prev => ({
+      ...prev,
+      [targetDay]: [...prev[targetDay], newRoutineItem]
+    }));
+
+    setSaveSuccessMessage(`✨ 성공적으로 ${targetDay} 루틴에 저장되었습니다!`);
+    setTimeout(() => setSaveSuccessMessage(''), 3000);
+  };
+
+  // 루틴 항목 삭제 함수
+  const handleDeleteRoutineItem = (day, index) => {
+    setRoutines(prev => ({
+      ...prev,
+      [day]: prev[day].filter((_, i) => i !== index)
+    }));
+  };
+
   return (
     <div className="bg-[#0b1326] text-[#e2e2e6] font-sans antialiased h-screen overflow-hidden flex">
       {/* Sidebar Navigation */}
@@ -172,6 +212,7 @@ export default function App() {
             <span>추천</span>
           </button>
           
+          {/* 운동 도사전 ➔ 운동 목록으로 변경 */}
           <button 
             onClick={() => setActiveTab('dictionary')}
             className={`flex items-center gap-3 px-4 py-3 rounded-full text-left font-medium transition-all ${
@@ -181,7 +222,7 @@ export default function App() {
             }`}
           >
             <span className="material-symbols-outlined">menu_book</span>
-            <span>운동 도사전</span>
+            <span>운동 목록</span>
           </button>
 
           <button 
@@ -213,8 +254,8 @@ export default function App() {
         <div>
           <h1 className="text-xl font-bold text-white">
             {activeTab === 'recommend' && '맞춤 운동 추천'}
-            {activeTab === 'dictionary' && '운동 도사전 (운동 목록 및 자세 가이드)'}
-            {activeTab === 'routine' && '요일별 운동 루틴'}
+            {activeTab === 'dictionary' && '운동 목록 (운동 및 자세 가이드)'}
+            {activeTab === 'routine' && '요일별 운동 루틴 관리'}
           </h1>
         </div>
         <div className="flex items-center gap-4">
@@ -348,26 +389,57 @@ export default function App() {
               </div>
 
               {result && (
-                <div className="bg-[#31394d]/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl space-y-4 mb-20">
-                  <h3 className="text-lg font-bold text-[#9BCB3C]">🤖 AI 맞춤 운동 추천 결과</h3>
-                  {muscleImageUrl && (
-                    <div className="text-center">
-                      <img src={muscleImageUrl} alt="타겟 근육 시각화" className="max-w-full h-auto rounded-2xl mx-auto border border-[#44474e]" />
+                <div className="bg-[#31394d]/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl space-y-4 mb-20 shadow-2xl">
+                  <div className="flex justify-between items-center border-b border-[#44474e]/30 pb-3">
+                    <h3 className="text-lg font-bold text-[#9BCB3C]">🤖 깔끔하게 정리된 AI 맞춤 운동 추천 결과</h3>
+                    
+                    {/* 루틴 저장 바디 */}
+                    <div className="flex items-center gap-2">
+                      <select 
+                        value={targetDay} 
+                        onChange={(e) => setTargetDay(e.target.value)}
+                        className="bg-[#060e20] border border-[#44474e] text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-[#9BCB3C]"
+                      >
+                        {Object.keys(routines).map(day => (
+                          <option key={day} value={day}>{day}</option>
+                        ))}
+                      </select>
+                      <button 
+                        onClick={handleSaveToRoutine}
+                        className="px-4 py-2 bg-[#1F3F7A] hover:bg-[#1F3F7A]/80 text-white text-xs font-bold rounded-xl transition-all shadow-md"
+                      >
+                        루틴에 저장
+                      </button>
+                    </div>
+                  </div>
+
+                  {saveSuccessMessage && (
+                    <div className="p-3 rounded-xl bg-[#9BCB3C]/10 border border-[#9BCB3C]/30 text-[#9BCB3C] text-xs font-bold text-center animate-bounce">
+                      {saveSuccessMessage}
                     </div>
                   )}
-                  <p className="whitespace-pre-line leading-relaxed text-sm text-[#e2e2e6]">{result}</p>
+
+                  {muscleImageUrl && (
+                    <div className="text-center my-4">
+                      <img src={muscleImageUrl} alt="타겟 근육 시각화" className="max-w-full h-auto max-h-[350px] rounded-2xl mx-auto border border-[#44474e] shadow-lg" />
+                    </div>
+                  )}
+
+                  <div className="bg-[#060e20]/60 p-5 rounded-2xl border border-white/5">
+                    <p className="whitespace-pre-line leading-relaxed text-sm text-[#e2e2e6]">{result}</p>
+                  </div>
                 </div>
               )}
             </>
           )}
 
-          {/* 운동 도사전 탭 화면 */}
+          {/* 운동 목록 탭 화면 (구 운동 도사전) */}
           {activeTab === 'dictionary' && (
             <div className="space-y-6 pb-20">
               <section className="bg-[#31394d]/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="material-symbols-outlined text-[#9BCB3C]">fitness_center</span>
-                  <h2 className="text-lg font-bold text-white">부위별 운동 도사전</h2>
+                  <h2 className="text-lg font-bold text-white">부위별 운동 목록 및 자세 가이드</h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {Object.keys(exerciseDictionary).map((cat) => (
@@ -453,10 +525,61 @@ export default function App() {
             </div>
           )}
 
+          {/* 루틴 탭 화면 (저장한 요일별 루틴 보기) */}
           {activeTab === 'routine' && (
-            <div className="bg-[#31394d]/25 backdrop-blur-xl border border-white/5 p-8 rounded-3xl">
-              <h2 className="text-xl font-bold text-white mb-4">📅 요일별 운동 루틴 관리</h2>
-              <p className="text-[#c4c6cf]">맞춤 운동 추천 결과를 저장하고 요일별 루틴을 관리할 수 있습니다.</p>
+            <div className="space-y-6 pb-20">
+              <div className="bg-[#31394d]/25 backdrop-blur-xl border border-white/5 p-6 rounded-3xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="material-symbols-outlined text-[#9BCB3C]">calendar_month</span>
+                  <h2 className="text-xl font-bold text-white">요일별 저장된 운동 루틴</h2>
+                </div>
+                <p className="text-[#c4c6cf] text-xs">맞춤 추천에서 저장한 요일별 운동 루틴을 깔끔하게 확인하고 관리할 수 있습니다.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.keys(routines).map((day) => (
+                  <div key={day} className="bg-[#31394d]/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl space-y-4 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-3 border-b border-[#44474e]/30 pb-2">
+                        <h3 className="font-bold text-white text-base flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#9BCB3C]"></span>
+                          {day} 루틴
+                        </h3>
+                        <span className="text-xs text-[#c4c6cf] bg-[#242d47] px-2.5 py-1 rounded-full border border-[#44474e]">
+                          {routines[day].length}개 항목
+                        </span>
+                      </div>
+
+                      {routines[day].length > 0 ? (
+                        <div className="space-y-3">
+                          {routines[day].map((item, idx) => (
+                            <div key={idx} className="bg-[#060e20]/60 p-4 rounded-2xl border border-white/5 space-y-2 relative group">
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-bold text-sm text-[#9BCB3C]">{item.title}</h4>
+                                <button 
+                                  onClick={() => handleDeleteRoutineItem(day, idx)}
+                                  className="text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded bg-red-500/10 transition-all"
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                              <p className="text-xs text-[#e2e2e6] whitespace-pre-line leading-relaxed max-h-32 overflow-y-auto pr-1">
+                                {item.content}
+                              </p>
+                              <span className="text-[10px] text-[#c4c6cf] opacity-50 block text-right">저장 시각: {item.timestamp}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center text-[#c4c6cf] opacity-50 text-xs flex flex-col items-center gap-1">
+                          <span className="material-symbols-outlined text-2xl">event_busy</span>
+                          <span>저장된 운동 루틴이 없습니다.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
