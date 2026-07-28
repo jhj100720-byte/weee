@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
   try {
     const { mode, payload } = req.body;
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     if (mode === 'recommend') {
       const prompt = `
@@ -65,34 +65,6 @@ export default async function handler(req, res) {
       const imageUrl = await generateMuscleImage(parsed.targetMusclesEn);
       return res.status(200).json({ text: parsed.resultText, imageUrl, targetMusclesEn: parsed.targetMusclesEn });
 
-    } else if (mode === 'vision') {
-      const base64Data = payload.imageBase64.split(',')[1] || payload.imageBase64;
-      const imagePart = {
-        inlineData: {
-          data: base64Data,
-          mimeType: "image/jpeg",
-        },
-      };
-
-      const prompt = `
-        이 사진의 운동기구를 식별하고 아래 JSON 포맷으로만 답변하세요.
-
-        {
-          "resultText": "기구 분석 내용...",
-          "targetMusclesEn": "Latissimus dorsi"
-        }
-      `;
-
-      const result = await model.generateContent([prompt, imagePart]);
-      const response = await result.response;
-      let text = response.text().trim();
-      if (text.startsWith("```json")) text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-
-      let parsed = { resultText: text, targetMusclesEn: "Target muscle" };
-      try { parsed = JSON.parse(text); } catch (e) {}
-
-      const imageUrl = await generateMuscleImage(parsed.targetMusclesEn);
-      return res.status(200).json({ text: parsed.resultText, imageUrl, targetMusclesEn: parsed.targetMusclesEn });
     }
 
     return res.status(400).json({ error: 'Invalid mode' });
